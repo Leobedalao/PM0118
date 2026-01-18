@@ -42,10 +42,15 @@ export interface CheckIn {
 export interface DailyTask {
   id: string;
   title: string;
+  description?: string;
+  category_id?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
   completed: boolean;
   date: string;
   created_at: string;
   updated_at: string;
+  category?: Category;
 }
 
 // 周总结类型
@@ -82,6 +87,10 @@ export interface CheckInInput {
 // 每日任务创建输入类型
 export interface DailyTaskInput {
   title: string;
+  description?: string;
+  category_id?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
   completed?: boolean;
   date?: string;
 }

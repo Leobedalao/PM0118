@@ -346,13 +346,21 @@ export default function TasksPage() {
         {/* 周总结列表 */}
         <Card>
           <CardHeader>
-            <CardTitle>周总结记录</CardTitle>
-            <CardDescription>查看和管理你的周总结</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>周总结记录</CardTitle>
+                <CardDescription>查看和管理你的周总结</CardDescription>
+              </div>
+              <Button onClick={handleOpenWeeklySummary}>
+                <Plus className="mr-2 h-4 w-4" />
+                添加周总结
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {weeklySummaries.length === 0 ? (
               <div className="py-8 text-center text-sm text-muted-foreground">
-                暂无周总结记录，点击"周总结"按钮创建第一条记录
+                暂无周总结记录，点击"添加周总结"按钮创建第一条记录
               </div>
             ) : (
               <div className="space-y-4">

@@ -288,7 +288,7 @@ export async function getCategoryStatistics() {
 export async function getDailyTasksByDate(date: string): Promise<DailyTask[]> {
   const { data, error } = await supabase
     .from('daily_tasks')
-    .select('*')
+    .select('*, category:categories(*)')
     .eq('date', date)
     .order('created_at', { ascending: true });
 
@@ -307,10 +307,15 @@ export async function createDailyTask(task: DailyTaskInput): Promise<DailyTask> 
   const { data, error } = await supabase
     .from('daily_tasks')
     .insert([{
-      ...task,
+      title: task.title,
+      description: task.description || null,
+      category_id: task.category_id || null,
+      status: task.status || 'todo',
+      priority: task.priority || 'medium',
+      completed: task.completed || false,
       date: task.date || new Date().toISOString().split('T')[0]
     }])
-    .select()
+    .select('*, category:categories(*)')
     .single();
 
   if (error) throw error;
@@ -319,11 +324,22 @@ export async function createDailyTask(task: DailyTaskInput): Promise<DailyTask> 
 
 // 更新每日任务
 export async function updateDailyTask(id: string, updates: Partial<DailyTaskInput>): Promise<DailyTask> {
+  const updateData: Record<string, unknown> = {
+    updated_at: new Date().toISOString()
+  };
+  
+  if (updates.title !== undefined) updateData.title = updates.title;
+  if (updates.description !== undefined) updateData.description = updates.description || null;
+  if (updates.category_id !== undefined) updateData.category_id = updates.category_id || null;
+  if (updates.status !== undefined) updateData.status = updates.status;
+  if (updates.priority !== undefined) updateData.priority = updates.priority;
+  if (updates.completed !== undefined) updateData.completed = updates.completed;
+
   const { data, error } = await supabase
     .from('daily_tasks')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update(updateData)
     .eq('id', id)
-    .select()
+    .select('*, category:categories(*)')
     .single();
 
   if (error) throw error;

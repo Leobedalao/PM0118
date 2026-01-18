@@ -9,12 +9,14 @@ import {
   getTaskStatistics, 
   getCheckInStatistics, 
   getCategoryStatistics,
+  getCategories,
   getTodayTasks,
   createDailyTask,
   updateDailyTask,
   toggleDailyTask,
   deleteDailyTask
 } from '@/db/api';
+import type { DailyTask, DailyTaskInput, Category } from '@/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { toast } from 'sonner';
 
@@ -41,11 +43,13 @@ export default function Dashboard() {
     totalDuration: 0
   });
   const [categoryStats, setCategoryStats] = useState<any[]>([]);
-  const [dailyTasks, setDailyTasks] = useState<any[]>([]);
+  const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     loadStatistics();
     loadDailyTasks();
+    loadCategories();
   }, []);
 
   async function loadStatistics() {
@@ -76,14 +80,23 @@ export default function Dashboard() {
     }
   }
 
-  async function handleAddDailyTask(title: string) {
+  async function loadCategories() {
     try {
-      await createDailyTask({ title });
-      toast.success('任务添加成功');
+      const cats = await getCategories();
+      setCategories(cats);
+    } catch (error) {
+      console.error('加载分类失败:', error);
+    }
+  }
+
+  async function handleAddDailyTask(task: DailyTaskInput) {
+    try {
+      await createDailyTask(task);
+      toast.success('今日任务添加成功');
       loadDailyTasks();
     } catch (error) {
-      console.error('添加任务失败:', error);
-      toast.error('添加任务失败');
+      console.error('添加今日任务失败:', error);
+      toast.error('添加今日任务失败');
     }
   }
 
@@ -97,14 +110,14 @@ export default function Dashboard() {
     }
   }
 
-  async function handleUpdateDailyTask(id: string, title: string) {
+  async function handleUpdateDailyTask(id: string, updates: Partial<DailyTaskInput>) {
     try {
-      await updateDailyTask(id, { title });
-      toast.success('任务更新成功');
+      await updateDailyTask(id, updates);
+      toast.success('今日任务更新成功');
       loadDailyTasks();
     } catch (error) {
-      console.error('更新任务失败:', error);
-      toast.error('更新任务失败');
+      console.error('更新今日任务失败:', error);
+      toast.error('更新今日任务失败');
     }
   }
 
@@ -187,6 +200,7 @@ export default function Dashboard() {
         {/* 今日任务模块 */}
         <DailyTaskList
           tasks={dailyTasks}
+          categories={categories}
           onAdd={handleAddDailyTask}
           onToggle={handleToggleDailyTask}
           onUpdate={handleUpdateDailyTask}
