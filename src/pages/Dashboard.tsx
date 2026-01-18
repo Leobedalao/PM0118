@@ -10,13 +10,14 @@ import {
   getCheckInStatistics, 
   getCategoryStatistics,
   getCategories,
+  getTasks,
   getTodayTasks,
   createDailyTask,
   updateDailyTask,
   toggleDailyTask,
   deleteDailyTask
 } from '@/db/api';
-import type { DailyTask, DailyTaskInput, Category } from '@/types';
+import type { DailyTask, DailyTaskInput, Category, Task } from '@/types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { toast } from 'sonner';
 
@@ -45,11 +46,13 @@ export default function Dashboard() {
   const [categoryStats, setCategoryStats] = useState<any[]>([]);
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
 
   useEffect(() => {
     loadStatistics();
     loadDailyTasks();
     loadCategories();
+    loadAllTasks();
   }, []);
 
   async function loadStatistics() {
@@ -86,6 +89,15 @@ export default function Dashboard() {
       setCategories(cats);
     } catch (error) {
       console.error('加载分类失败:', error);
+    }
+  }
+
+  async function loadAllTasks() {
+    try {
+      const tasks = await getTasks();
+      setAllTasks(tasks);
+    } catch (error) {
+      console.error('加载任务列表失败:', error);
     }
   }
 
@@ -201,6 +213,7 @@ export default function Dashboard() {
         <DailyTaskList
           tasks={dailyTasks}
           categories={categories}
+          allTasks={allTasks}
           onAdd={handleAddDailyTask}
           onToggle={handleToggleDailyTask}
           onUpdate={handleUpdateDailyTask}

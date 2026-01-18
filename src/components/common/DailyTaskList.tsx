@@ -27,20 +27,21 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Edit2 } from 'lucide-react';
-import type { DailyTask, DailyTaskInput, Category } from '@/types';
+import type { DailyTask, DailyTaskInput, Category, Task } from '@/types';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface DailyTaskListProps {
   tasks: DailyTask[];
   categories: Category[];
+  allTasks: Task[];
   onToggle: (id: string, completed: boolean) => void;
   onAdd: (task: DailyTaskInput) => void;
   onUpdate: (id: string, task: Partial<DailyTaskInput>) => void;
   onDelete: (id: string) => void;
 }
 
-export function DailyTaskList({ tasks, categories, onToggle, onAdd, onUpdate, onDelete }: DailyTaskListProps) {
+export function DailyTaskList({ tasks, categories, allTasks, onToggle, onAdd, onUpdate, onDelete }: DailyTaskListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<DailyTask | null>(null);
 
@@ -48,6 +49,7 @@ export function DailyTaskList({ tasks, categories, onToggle, onAdd, onUpdate, on
     defaultValues: {
       title: '',
       description: '',
+      task_id: '',
       category_id: '',
       status: 'todo',
       priority: 'medium',
@@ -60,6 +62,7 @@ export function DailyTaskList({ tasks, categories, onToggle, onAdd, onUpdate, on
       form.reset({
         title: task.title,
         description: task.description || '',
+        task_id: task.task_id || '',
         category_id: task.category_id || '',
         status: task.status,
         priority: task.priority,
@@ -69,12 +72,30 @@ export function DailyTaskList({ tasks, categories, onToggle, onAdd, onUpdate, on
       form.reset({
         title: '',
         description: '',
+        task_id: '',
         category_id: '',
         status: 'todo',
         priority: 'medium',
       });
     }
     setIsDialogOpen(true);
+  }
+
+  function handleTaskSelect(taskId: string) {
+    if (taskId === 'none') {
+      form.setValue('task_id', '');
+      return;
+    }
+    
+    const selectedTask = allTasks.find(t => t.id === taskId);
+    if (selectedTask) {
+      form.setValue('task_id', taskId);
+      form.setValue('title', selectedTask.title);
+      form.setValue('description', selectedTask.description || '');
+      form.setValue('category_id', selectedTask.category_id || '');
+      form.setValue('status', selectedTask.status);
+      form.setValue('priority', selectedTask.priority);
+    }
   }
 
   function handleSubmit(data: DailyTaskInput) {
@@ -163,6 +184,37 @@ export function DailyTaskList({ tasks, categories, onToggle, onAdd, onUpdate, on
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="task_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>关联任务（可选）</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        handleTaskSelect(value);
+                      }} 
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="选择要关联的任务" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">不关联任务</SelectItem>
+                        {allTasks.map(task => (
+                          <SelectItem key={task.id} value={task.id}>
+                            {task.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="title"

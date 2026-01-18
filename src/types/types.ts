@@ -43,6 +43,7 @@ export interface DailyTask {
   id: string;
   title: string;
   description?: string;
+  task_id?: string;
   category_id?: string;
   status: TaskStatus;
   priority: TaskPriority;
@@ -51,6 +52,7 @@ export interface DailyTask {
   created_at: string;
   updated_at: string;
   category?: Category;
+  task?: Task;
 }
 
 // 周总结类型
@@ -88,6 +90,7 @@ export interface CheckInInput {
 export interface DailyTaskInput {
   title: string;
   description?: string;
+  task_id?: string;
   category_id?: string;
   status?: TaskStatus;
   priority?: TaskPriority;
