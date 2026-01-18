@@ -66,7 +66,12 @@ export function DailyTaskList({ tasks, onToggle, onAdd, onUpdate, onDelete }: Da
             onChange={(e) => setNewTaskTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           />
-          <Button onClick={handleAdd} size="icon">
+          <Button 
+            type="button"
+            onClick={handleAdd} 
+            size="icon"
+            disabled={!newTaskTitle.trim()}
+          >
             <Plus className="h-4 w-4" />
           </Button>
         </div>
