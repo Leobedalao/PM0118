@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -25,15 +25,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Edit2 } from 'lucide-react';
-import type { DailyTask, DailyTaskInput, Category, Task } from '@/types';
+import type { DailyTask, DailyTaskInput, Task } from '@/types';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 interface DailyTaskListProps {
   tasks: DailyTask[];
-  categories: Category[];
   allTasks: Task[];
   onToggle: (id: string, completed: boolean) => void;
   onAdd: (task: DailyTaskInput) => void;
@@ -41,18 +39,13 @@ interface DailyTaskListProps {
   onDelete: (id: string) => void;
 }
 
-export function DailyTaskList({ tasks, categories, allTasks, onToggle, onAdd, onUpdate, onDelete }: DailyTaskListProps) {
+export function DailyTaskList({ tasks, allTasks, onToggle, onAdd, onUpdate, onDelete }: DailyTaskListProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<DailyTask | null>(null);
 
   const form = useForm<DailyTaskInput>({
     defaultValues: {
-      title: '',
-      description: '',
       task_id: '',
-      category_id: '',
-      status: 'todo',
-      priority: 'medium',
     },
   });
 
@@ -60,42 +53,15 @@ export function DailyTaskList({ tasks, categories, allTasks, onToggle, onAdd, on
     if (task) {
       setEditingTask(task);
       form.reset({
-        title: task.title,
-        description: task.description || '',
-        task_id: task.task_id || '',
-        category_id: task.category_id || '',
-        status: task.status,
-        priority: task.priority,
+        task_id: task.task_id,
       });
     } else {
       setEditingTask(null);
       form.reset({
-        title: '',
-        description: '',
         task_id: '',
-        category_id: '',
-        status: 'todo',
-        priority: 'medium',
       });
     }
     setIsDialogOpen(true);
-  }
-
-  function handleTaskSelect(taskId: string) {
-    if (taskId === 'none') {
-      form.setValue('task_id', '');
-      return;
-    }
-    
-    const selectedTask = allTasks.find(t => t.id === taskId);
-    if (selectedTask) {
-      form.setValue('task_id', taskId);
-      form.setValue('title', selectedTask.title);
-      form.setValue('description', selectedTask.description || '');
-      form.setValue('category_id', selectedTask.category_id || '');
-      form.setValue('status', selectedTask.status);
-      form.setValue('priority', selectedTask.priority);
-    }
   }
 
   function handleSubmit(data: DailyTaskInput) {
@@ -145,11 +111,16 @@ export function DailyTaskList({ tasks, categories, allTasks, onToggle, onAdd, on
                     checked={task.completed}
                     onCheckedChange={(checked) => onToggle(task.id, checked as boolean)}
                   />
-                  <span
-                    className={`flex-1 ${task.completed ? 'text-muted-foreground line-through' : ''}`}
-                  >
-                    {task.title}
-                  </span>
+                  <div className="flex-1">
+                    <div className={task.completed ? 'text-muted-foreground line-through' : ''}>
+                      {task.task.title}
+                    </div>
+                    {task.task.category && (
+                      <Badge variant="outline" className="mt-1 text-xs">
+                        {task.task.category.name}
+                      </Badge>
+                    )}
+                  </div>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -187,85 +158,21 @@ export function DailyTaskList({ tasks, categories, allTasks, onToggle, onAdd, on
               <FormField
                 control={form.control}
                 name="task_id"
+                rules={{ required: '请选择任务' }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>关联任务（可选）</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        handleTaskSelect(value);
-                      }} 
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="选择要关联的任务" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="none">不关联任务</SelectItem>
-                        {allTasks.map(task => (
-                          <SelectItem key={task.id} value={task.id}>
-                            {task.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="title"
-                rules={{ required: '请输入任务标题' }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>任务标题</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="输入今日任务标题..." 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>任务描述</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="输入任务描述（可选）..." 
-                        {...field}
-                        rows={3}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="category_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>分类</FormLabel>
+                    <FormLabel>选择任务</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="选择分类" />
+                          <SelectValue placeholder="从任务管理中选择一个任务" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="none">无分类</SelectItem>
-                        {categories.map(cat => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.name}
+                        {allTasks.map(task => (
+                          <SelectItem key={task.id} value={task.id}>
+                            {task.title}
+                            {task.category && ` (${task.category.name})`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -274,52 +181,6 @@ export function DailyTaskList({ tasks, categories, allTasks, onToggle, onAdd, on
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>状态</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择状态" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="todo">待办</SelectItem>
-                          <SelectItem value="in_progress">进行中</SelectItem>
-                          <SelectItem value="completed">已完成</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="priority"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>优先级</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择优先级" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="low">低</SelectItem>
-                          <SelectItem value="medium">中</SelectItem>
-                          <SelectItem value="high">高</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   取消

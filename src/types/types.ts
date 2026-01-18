@@ -26,6 +26,7 @@ export interface Task {
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+  category?: Category;
 }
 
 // 打卡记录类型
@@ -41,18 +42,12 @@ export interface CheckIn {
 // 每日任务类型
 export interface DailyTask {
   id: string;
-  title: string;
-  description?: string;
-  task_id?: string;
-  category_id?: string;
-  status: TaskStatus;
-  priority: TaskPriority;
+  task_id: string;
   completed: boolean;
   date: string;
   created_at: string;
   updated_at: string;
-  category?: Category;
-  task?: Task;
+  task: Task;
 }
 
 // 周总结类型
@@ -88,12 +83,7 @@ export interface CheckInInput {
 
 // 每日任务创建输入类型
 export interface DailyTaskInput {
-  title: string;
-  description?: string;
-  task_id?: string;
-  category_id?: string;
-  status?: TaskStatus;
-  priority?: TaskPriority;
+  task_id: string;
   completed?: boolean;
   date?: string;
 }
