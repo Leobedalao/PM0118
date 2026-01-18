@@ -66,8 +66,14 @@ export function WeeklySummaryDialog({
         <DialogHeader>
           <DialogTitle>周总结</DialogTitle>
           <DialogDescription>
-            {format(new Date(weekRange.weekStart), 'yyyy年MM月dd日', { locale: zhCN })} -{' '}
-            {format(new Date(weekRange.weekEnd), 'yyyy年MM月dd日', { locale: zhCN })}
+            {weekRange.weekStart && weekRange.weekEnd ? (
+              <>
+                {format(new Date(weekRange.weekStart), 'yyyy年MM月dd日', { locale: zhCN })} -{' '}
+                {format(new Date(weekRange.weekEnd), 'yyyy年MM月dd日', { locale: zhCN })}
+              </>
+            ) : (
+              '加载中...'
+            )}
           </DialogDescription>
         </DialogHeader>
 
