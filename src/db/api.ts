@@ -302,12 +302,42 @@ export async function getTodayTasks(): Promise<DailyTask[]> {
   return getDailyTasksByDate(today);
 }
 
+// 获取日期范围内的每日任务
+export async function getDailyTasksByDateRange(startDate: string, endDate: string): Promise<DailyTask[]> {
+  const { data, error } = await supabase
+    .from('daily_tasks')
+    .select('*, task:tasks!inner(*, category:categories(*))')
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
+}
+
+// 获取所有每日任务（用于时间轴）
+export async function getAllDailyTasks(): Promise<DailyTask[]> {
+  const { data, error } = await supabase
+    .from('daily_tasks')
+    .select('*, task:tasks!inner(*, category:categories(*))')
+    .order('date', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
+}
+
 // 创建每日任务
 export async function createDailyTask(task: DailyTaskInput): Promise<DailyTask> {
   const { data, error } = await supabase
     .from('daily_tasks')
     .insert([{
       task_id: task.task_id,
+      title: task.title,
+      description: task.description || null,
+      status: task.status || 'todo',
+      priority: task.priority || 'medium',
       completed: task.completed || false,
       date: task.date || new Date().toISOString().split('T')[0]
     }])
@@ -325,6 +355,10 @@ export async function updateDailyTask(id: string, updates: Partial<DailyTaskInpu
   };
   
   if (updates.task_id !== undefined) updateData.task_id = updates.task_id;
+  if (updates.title !== undefined) updateData.title = updates.title;
+  if (updates.description !== undefined) updateData.description = updates.description || null;
+  if (updates.status !== undefined) updateData.status = updates.status;
+  if (updates.priority !== undefined) updateData.priority = updates.priority;
   if (updates.completed !== undefined) updateData.completed = updates.completed;
 
   const { data, error } = await supabase

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -25,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, Edit2 } from 'lucide-react';
 import type { DailyTask, DailyTaskInput, Task } from '@/types';
 import { useState } from 'react';
@@ -46,6 +48,10 @@ export function DailyTaskList({ tasks, allTasks, onToggle, onAdd, onUpdate, onDe
   const form = useForm<DailyTaskInput>({
     defaultValues: {
       task_id: '',
+      title: '',
+      description: '',
+      status: 'todo',
+      priority: 'medium',
     },
   });
 
@@ -54,11 +60,19 @@ export function DailyTaskList({ tasks, allTasks, onToggle, onAdd, onUpdate, onDe
       setEditingTask(task);
       form.reset({
         task_id: task.task_id,
+        title: task.title,
+        description: task.description || '',
+        status: task.status,
+        priority: task.priority,
       });
     } else {
       setEditingTask(null);
       form.reset({
         task_id: '',
+        title: '',
+        description: '',
+        status: 'todo',
+        priority: 'medium',
       });
     }
     setIsDialogOpen(true);
@@ -113,13 +127,18 @@ export function DailyTaskList({ tasks, allTasks, onToggle, onAdd, onUpdate, onDe
                   />
                   <div className="flex-1">
                     <div className={task.completed ? 'text-muted-foreground line-through' : ''}>
-                      {task.task.title}
+                      {task.title}
                     </div>
-                    {task.task.category && (
-                      <Badge variant="outline" className="mt-1 text-xs">
-                        {task.task.category.name}
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="outline" className="text-xs">
+                        母任务: {task.task.title}
                       </Badge>
-                    )}
+                      {task.task.category && (
+                        <Badge variant="outline" className="text-xs">
+                          {task.task.category.name}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                   <Button
                     size="icon"
@@ -148,9 +167,9 @@ export function DailyTaskList({ tasks, allTasks, onToggle, onAdd, onUpdate, onDe
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingTask ? '编辑今日任务' : '添加今日任务'}</DialogTitle>
+            <DialogTitle>{editingTask ? '编辑每日任务' : '添加每日任务'}</DialogTitle>
             <DialogDescription>
-              {editingTask ? '修改任务内容' : '创建一个新的今日任务'}
+              {editingTask ? '修改每日子任务的内容' : '基于母任务创建一个新的每日子任务'}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -158,14 +177,14 @@ export function DailyTaskList({ tasks, allTasks, onToggle, onAdd, onUpdate, onDe
               <FormField
                 control={form.control}
                 name="task_id"
-                rules={{ required: '请选择任务' }}
+                rules={{ required: '请选择母任务' }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>选择任务</FormLabel>
+                    <FormLabel>母任务</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="从任务管理中选择一个任务" />
+                          <SelectValue placeholder="选择要细分的母任务" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -181,6 +200,87 @@ export function DailyTaskList({ tasks, allTasks, onToggle, onAdd, onUpdate, onDe
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="title"
+                rules={{ required: '请输入子任务标题' }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>子任务标题</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="输入今日子任务的具体内容..." 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>任务描述</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="输入任务描述（可选）..." 
+                        {...field}
+                        rows={3}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>状态</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="选择状态" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="todo">待办</SelectItem>
+                          <SelectItem value="in_progress">进行中</SelectItem>
+                          <SelectItem value="completed">已完成</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="priority"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>优先级</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="选择优先级" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="low">低</SelectItem>
+                          <SelectItem value="medium">中</SelectItem>
+                          <SelectItem value="high">高</SelectItem>
+                          <SelectItem value="urgent">紧急</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   取消

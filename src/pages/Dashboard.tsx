@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/layouts/AppLayout';
 import { StatCard } from '@/components/common/StatCard';
 import { DailyTaskList } from '@/components/common/DailyTaskList';
+import { TaskTimeline } from '@/components/common/TaskTimeline';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ListTodo, CheckSquare, TrendingUp, Clock } from 'lucide-react';
@@ -11,6 +12,7 @@ import {
   getCategoryStatistics,
   getTasks,
   getTodayTasks,
+  getAllDailyTasks,
   createDailyTask,
   updateDailyTask,
   toggleDailyTask,
@@ -45,11 +47,13 @@ export default function Dashboard() {
   const [categoryStats, setCategoryStats] = useState<any[]>([]);
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
   const [allTasks, setAllTasks] = useState<Task[]>([]);
+  const [timelineTasks, setTimelineTasks] = useState<DailyTask[]>([]);
 
   useEffect(() => {
     loadStatistics();
     loadDailyTasks();
     loadAllTasks();
+    loadTimelineTasks();
   }, []);
 
   async function loadStatistics() {
@@ -89,11 +93,21 @@ export default function Dashboard() {
     }
   }
 
+  async function loadTimelineTasks() {
+    try {
+      const tasks = await getAllDailyTasks();
+      setTimelineTasks(tasks);
+    } catch (error) {
+      console.error('加载时间轴任务失败:', error);
+    }
+  }
+
   async function handleAddDailyTask(task: DailyTaskInput) {
     try {
       await createDailyTask(task);
       toast.success('今日任务添加成功');
       loadDailyTasks();
+      loadTimelineTasks();
     } catch (error) {
       console.error('添加今日任务失败:', error);
       toast.error('添加今日任务失败');
@@ -104,6 +118,7 @@ export default function Dashboard() {
     try {
       await toggleDailyTask(id, completed);
       loadDailyTasks();
+      loadTimelineTasks();
     } catch (error) {
       console.error('更新任务失败:', error);
       toast.error('更新任务失败');
@@ -115,6 +130,7 @@ export default function Dashboard() {
       await updateDailyTask(id, updates);
       toast.success('今日任务更新成功');
       loadDailyTasks();
+      loadTimelineTasks();
     } catch (error) {
       console.error('更新今日任务失败:', error);
       toast.error('更新今日任务失败');
@@ -126,6 +142,7 @@ export default function Dashboard() {
       await deleteDailyTask(id);
       toast.success('任务删除成功');
       loadDailyTasks();
+      loadTimelineTasks();
     } catch (error) {
       console.error('删除任务失败:', error);
       toast.error('删除任务失败');
@@ -267,6 +284,9 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* 任务时间轴 */}
+        <TaskTimeline tasks={timelineTasks} />
 
         {/* 分类详细统计 */}
         <Card>

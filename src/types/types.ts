@@ -39,10 +39,14 @@ export interface CheckIn {
   created_at: string;
 }
 
-// 每日任务类型
+// 每日任务类型（母任务的细分子任务）
 export interface DailyTask {
   id: string;
   task_id: string;
+  title: string;
+  description?: string;
+  status: TaskStatus;
+  priority: TaskPriority;
   completed: boolean;
   date: string;
   created_at: string;
@@ -84,6 +88,10 @@ export interface CheckInInput {
 // 每日任务创建输入类型
 export interface DailyTaskInput {
   task_id: string;
+  title: string;
+  description?: string;
+  status?: TaskStatus;
+  priority?: TaskPriority;
   completed?: boolean;
   date?: string;
 }
