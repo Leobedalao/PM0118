@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search, FileText } from 'lucide-react';
+import { Plus, Search, FileText, Trash2, Calendar } from 'lucide-react';
 import { 
   getTasks, 
   getCategories, 
@@ -43,11 +43,15 @@ import {
   getCurrentWeekSummary,
   createWeeklySummary,
   updateWeeklySummary,
-  getCurrentWeekRange
+  getCurrentWeekRange,
+  getWeeklySummaries,
+  deleteWeeklySummary
 } from '@/db/api';
-import type { Task, Category, TaskInput, WeeklySummaryInput } from '@/types';
+import type { Task, Category, TaskInput, WeeklySummaryInput, WeeklySummary } from '@/types';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 
 export default function TasksPage() {
   const [loading, setLoading] = useState(true);
@@ -60,8 +64,9 @@ export default function TasksPage() {
   const [isWeeklySummaryOpen, setIsWeeklySummaryOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [checkInTask, setCheckInTask] = useState<Task | null>(null);
-  const [weeklySummary, setWeeklySummary] = useState<any>(null);
+  const [weeklySummary, setWeeklySummary] = useState<WeeklySummary | null>(null);
   const [weekRange, setWeekRange] = useState({ weekStart: '', weekEnd: '' });
+  const [weeklySummaries, setWeeklySummaries] = useState<WeeklySummary[]>([]);
 
   const form = useForm<TaskInput>({
     defaultValues: {
@@ -83,6 +88,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     loadData();
+    loadWeeklySummaries();
   }, []);
 
   async function loadData() {
@@ -99,6 +105,15 @@ export default function TasksPage() {
       toast.error('加载数据失败');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadWeeklySummaries() {
+    try {
+      const summaries = await getWeeklySummaries();
+      setWeeklySummaries(summaries);
+    } catch (error) {
+      console.error('加载周总结失败:', error);
     }
   }
 
@@ -223,10 +238,32 @@ export default function TasksPage() {
       }
       setIsWeeklySummaryOpen(false);
       loadWeeklySummary();
+      loadWeeklySummaries();
     } catch (error) {
       console.error('保存周总结失败:', error);
       toast.error('保存周总结失败');
     }
+  }
+
+  async function handleDeleteWeeklySummary(id: string) {
+    if (!confirm('确定要删除这条周总结吗？')) return;
+    try {
+      await deleteWeeklySummary(id);
+      toast.success('周总结删除成功');
+      loadWeeklySummaries();
+    } catch (error) {
+      console.error('删除周总结失败:', error);
+      toast.error('删除周总结失败');
+    }
+  }
+
+  function handleViewWeeklySummary(summary: WeeklySummary) {
+    setWeeklySummary(summary);
+    setWeekRange({
+      weekStart: summary.week_start,
+      weekEnd: summary.week_end
+    });
+    setIsWeeklySummaryOpen(true);
   }
 
   const filteredTasks = tasks.filter(task => {
@@ -305,6 +342,93 @@ export default function TasksPage() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* 周总结列表 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>周总结记录</CardTitle>
+            <CardDescription>查看和管理你的周总结</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {weeklySummaries.length === 0 ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                暂无周总结记录，点击"周总结"按钮创建第一条记录
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {weeklySummaries.map(summary => (
+                  <Card key={summary.id} className="border-l-4 border-l-primary">
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            {format(new Date(summary.week_start), 'yyyy年MM月dd日', { locale: zhCN })} -{' '}
+                            {format(new Date(summary.week_end), 'yyyy年MM月dd日', { locale: zhCN })}
+                          </CardTitle>
+                          <CardDescription>
+                            创建于 {format(new Date(summary.created_at), 'yyyy-MM-dd HH:mm', { locale: zhCN })}
+                          </CardDescription>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewWeeklySummary(summary)}
+                          >
+                            查看/编辑
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteWeeklySummary(summary.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {summary.current_goals && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-1">本周目标</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {summary.current_goals}
+                          </p>
+                        </div>
+                      )}
+                      {summary.achievements && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-1">本周成就</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {summary.achievements}
+                          </p>
+                        </div>
+                      )}
+                      {summary.challenges && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-1">本周挑战</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {summary.challenges}
+                          </p>
+                        </div>
+                      )}
+                      {summary.next_goals && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-1">下周目标</h4>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {summary.next_goals}
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* 添加/编辑任务对话框 */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
