@@ -1,11 +1,22 @@
 import { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/layouts/AppLayout';
 import { StatCard } from '@/components/common/StatCard';
+import { DailyTaskList } from '@/components/common/DailyTaskList';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ListTodo, CheckSquare, TrendingUp, Clock } from 'lucide-react';
-import { getTaskStatistics, getCheckInStatistics, getCategoryStatistics } from '@/db/api';
+import { 
+  getTaskStatistics, 
+  getCheckInStatistics, 
+  getCategoryStatistics,
+  getTodayTasks,
+  createDailyTask,
+  updateDailyTask,
+  toggleDailyTask,
+  deleteDailyTask
+} from '@/db/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { toast } from 'sonner';
 
 const COLORS = [
   'hsl(217, 91%, 60%)',
@@ -30,9 +41,11 @@ export default function Dashboard() {
     totalDuration: 0
   });
   const [categoryStats, setCategoryStats] = useState<any[]>([]);
+  const [dailyTasks, setDailyTasks] = useState<any[]>([]);
 
   useEffect(() => {
     loadStatistics();
+    loadDailyTasks();
   }, []);
 
   async function loadStatistics() {
@@ -50,6 +63,59 @@ export default function Dashboard() {
       console.error('加载统计数据失败:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadDailyTasks() {
+    try {
+      const tasks = await getTodayTasks();
+      setDailyTasks(tasks);
+    } catch (error) {
+      console.error('加载今日任务失败:', error);
+      toast.error('加载今日任务失败');
+    }
+  }
+
+  async function handleAddDailyTask(title: string) {
+    try {
+      await createDailyTask({ title });
+      toast.success('任务添加成功');
+      loadDailyTasks();
+    } catch (error) {
+      console.error('添加任务失败:', error);
+      toast.error('添加任务失败');
+    }
+  }
+
+  async function handleToggleDailyTask(id: string, completed: boolean) {
+    try {
+      await toggleDailyTask(id, completed);
+      loadDailyTasks();
+    } catch (error) {
+      console.error('更新任务失败:', error);
+      toast.error('更新任务失败');
+    }
+  }
+
+  async function handleUpdateDailyTask(id: string, title: string) {
+    try {
+      await updateDailyTask(id, { title });
+      toast.success('任务更新成功');
+      loadDailyTasks();
+    } catch (error) {
+      console.error('更新任务失败:', error);
+      toast.error('更新任务失败');
+    }
+  }
+
+  async function handleDeleteDailyTask(id: string) {
+    try {
+      await deleteDailyTask(id);
+      toast.success('任务删除成功');
+      loadDailyTasks();
+    } catch (error) {
+      console.error('删除任务失败:', error);
+      toast.error('删除任务失败');
     }
   }
 
@@ -117,6 +183,15 @@ export default function Dashboard() {
             </>
           )}
         </div>
+
+        {/* 今日任务模块 */}
+        <DailyTaskList
+          tasks={dailyTasks}
+          onAdd={handleAddDailyTask}
+          onToggle={handleToggleDailyTask}
+          onUpdate={handleUpdateDailyTask}
+          onDelete={handleDeleteDailyTask}
+        />
 
         {/* 图表区域 */}
         <div className="grid gap-6 @container xl:grid-cols-2">

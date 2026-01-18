@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/layouts/AppLayout';
 import { TaskCard } from '@/components/common/TaskCard';
+import { WeeklySummaryDialog } from '@/components/common/WeeklySummaryDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -29,9 +31,21 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Search } from 'lucide-react';
-import { getTasks, getCategories, createTask, updateTask, deleteTask, completeTask, createCheckIn } from '@/db/api';
-import type { Task, Category, TaskInput } from '@/types';
+import { Plus, Search, FileText } from 'lucide-react';
+import { 
+  getTasks, 
+  getCategories, 
+  createTask, 
+  updateTask, 
+  deleteTask, 
+  completeTask, 
+  createCheckIn,
+  getCurrentWeekSummary,
+  createWeeklySummary,
+  updateWeeklySummary,
+  getCurrentWeekRange
+} from '@/db/api';
+import type { Task, Category, TaskInput, WeeklySummaryInput } from '@/types';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -43,8 +57,11 @@ export default function TasksPage() {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCheckInDialogOpen, setIsCheckInDialogOpen] = useState(false);
+  const [isWeeklySummaryOpen, setIsWeeklySummaryOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [checkInTask, setCheckInTask] = useState<Task | null>(null);
+  const [weeklySummary, setWeeklySummary] = useState<any>(null);
+  const [weekRange, setWeekRange] = useState({ weekStart: '', weekEnd: '' });
 
   const form = useForm<TaskInput>({
     defaultValues: {
@@ -82,6 +99,18 @@ export default function TasksPage() {
       toast.error('加载数据失败');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadWeeklySummary() {
+    try {
+      const range = getCurrentWeekRange();
+      setWeekRange(range);
+      const summary = await getCurrentWeekSummary();
+      setWeeklySummary(summary);
+    } catch (error) {
+      console.error('加载周总结失败:', error);
+      toast.error('加载周总结失败');
     }
   }
 
@@ -178,6 +207,28 @@ export default function TasksPage() {
     }
   }
 
+  async function handleOpenWeeklySummary() {
+    await loadWeeklySummary();
+    setIsWeeklySummaryOpen(true);
+  }
+
+  async function handleSaveWeeklySummary(data: WeeklySummaryInput) {
+    try {
+      if (weeklySummary) {
+        await updateWeeklySummary(weeklySummary.id, data);
+        toast.success('周总结更新成功');
+      } else {
+        await createWeeklySummary(data);
+        toast.success('周总结创建成功');
+      }
+      setIsWeeklySummaryOpen(false);
+      loadWeeklySummary();
+    } catch (error) {
+      console.error('保存周总结失败:', error);
+      toast.error('保存周总结失败');
+    }
+  }
+
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       task.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -193,10 +244,16 @@ export default function TasksPage() {
             <h1 className="text-3xl font-bold">任务管理</h1>
             <p className="text-muted-foreground mt-2">管理你的学习任务</p>
           </div>
-          <Button onClick={handleAddTask}>
-            <Plus className="mr-2 h-4 w-4" />
-            添加任务
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleOpenWeeklySummary} variant="outline">
+              <FileText className="mr-2 h-4 w-4" />
+              周总结
+            </Button>
+            <Button onClick={handleAddTask}>
+              <Plus className="mr-2 h-4 w-4" />
+              添加任务
+            </Button>
+          </div>
         </div>
 
         {/* 搜索和筛选 */}
@@ -438,6 +495,15 @@ export default function TasksPage() {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* 周总结对话框 */}
+        <WeeklySummaryDialog
+          open={isWeeklySummaryOpen}
+          onOpenChange={setIsWeeklySummaryOpen}
+          summary={weeklySummary}
+          weekRange={weekRange}
+          onSave={handleSaveWeeklySummary}
+        />
       </div>
     </AppLayout>
   );

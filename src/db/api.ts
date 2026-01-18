@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Task, TaskInput, CheckIn, CheckInInput, Category } from '@/types';
+import type { Task, TaskInput, CheckIn, CheckInInput, Category, DailyTask, DailyTaskInput, WeeklySummary, WeeklySummaryInput } from '@/types';
 
 // ==================== 分类相关 API ====================
 
@@ -242,6 +242,8 @@ export async function getCheckInStatistics() {
   };
 }
 
+// ==================== 分类统计 API ====================
+
 // 获取分类统计
 export async function getCategoryStatistics() {
   const { data: categories, error: catError } = await supabase
@@ -278,4 +280,168 @@ export async function getCategoryStatistics() {
       checkInCount: categoryCheckIns.length
     };
   });
+}
+
+// ==================== 每日任务相关 API ====================
+
+// 获取指定日期的每日任务
+export async function getDailyTasksByDate(date: string): Promise<DailyTask[]> {
+  const { data, error } = await supabase
+    .from('daily_tasks')
+    .select('*')
+    .eq('date', date)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
+}
+
+// 获取今日任务
+export async function getTodayTasks(): Promise<DailyTask[]> {
+  const today = new Date().toISOString().split('T')[0];
+  return getDailyTasksByDate(today);
+}
+
+// 创建每日任务
+export async function createDailyTask(task: DailyTaskInput): Promise<DailyTask> {
+  const { data, error } = await supabase
+    .from('daily_tasks')
+    .insert([{
+      ...task,
+      date: task.date || new Date().toISOString().split('T')[0]
+    }])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// 更新每日任务
+export async function updateDailyTask(id: string, updates: Partial<DailyTaskInput>): Promise<DailyTask> {
+  const { data, error } = await supabase
+    .from('daily_tasks')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// 切换每日任务完成状态
+export async function toggleDailyTask(id: string, completed: boolean): Promise<DailyTask> {
+  const { data, error } = await supabase
+    .from('daily_tasks')
+    .update({ 
+      completed, 
+      updated_at: new Date().toISOString() 
+    })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// 删除每日任务
+export async function deleteDailyTask(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('daily_tasks')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+// ==================== 周总结相关 API ====================
+
+// 获取所有周总结
+export async function getWeeklySummaries(): Promise<WeeklySummary[]> {
+  const { data, error } = await supabase
+    .from('weekly_summaries')
+    .select('*')
+    .order('week_start', { ascending: false });
+
+  if (error) throw error;
+  return Array.isArray(data) ? data : [];
+}
+
+// 根据周起始日期获取周总结
+export async function getWeeklySummaryByWeek(weekStart: string): Promise<WeeklySummary | null> {
+  const { data, error } = await supabase
+    .from('weekly_summaries')
+    .select('*')
+    .eq('week_start', weekStart)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+// 获取当前周的周总结
+export async function getCurrentWeekSummary(): Promise<WeeklySummary | null> {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // 周一为一周的开始
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() + diff);
+  const weekStartStr = weekStart.toISOString().split('T')[0];
+
+  return getWeeklySummaryByWeek(weekStartStr);
+}
+
+// 创建周总结
+export async function createWeeklySummary(summary: WeeklySummaryInput): Promise<WeeklySummary> {
+  const { data, error } = await supabase
+    .from('weekly_summaries')
+    .insert([summary])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// 更新周总结
+export async function updateWeeklySummary(id: string, updates: Partial<WeeklySummaryInput>): Promise<WeeklySummary> {
+  const { data, error } = await supabase
+    .from('weekly_summaries')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// 删除周总结
+export async function deleteWeeklySummary(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('weekly_summaries')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+// 获取本周日期范围
+export function getCurrentWeekRange(): { weekStart: string; weekEnd: string } {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() + diff);
+  
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+  
+  return {
+    weekStart: weekStart.toISOString().split('T')[0],
+    weekEnd: weekEnd.toISOString().split('T')[0]
+  };
 }

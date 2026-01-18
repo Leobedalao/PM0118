@@ -38,6 +38,29 @@ export interface CheckIn {
   created_at: string;
 }
 
+// 每日任务类型
+export interface DailyTask {
+  id: string;
+  title: string;
+  completed: boolean;
+  date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// 周总结类型
+export interface WeeklySummary {
+  id: string;
+  week_start: string;
+  week_end: string;
+  current_goals: string | null;
+  achievements: string | null;
+  challenges: string | null;
+  next_goals: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // 任务创建输入类型
 export interface TaskInput {
   title: string;
@@ -54,6 +77,23 @@ export interface CheckInInput {
   date?: string;
   duration?: number;
   notes?: string;
+}
+
+// 每日任务创建输入类型
+export interface DailyTaskInput {
+  title: string;
+  completed?: boolean;
+  date?: string;
+}
+
+// 周总结创建输入类型
+export interface WeeklySummaryInput {
+  week_start: string;
+  week_end: string;
+  current_goals?: string;
+  achievements?: string;
+  challenges?: string;
+  next_goals?: string;
 }
 
 // 统计数据类型
